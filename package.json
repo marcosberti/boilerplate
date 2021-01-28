@@ -11,9 +11,5 @@
   },
   "keywords": [],
   "author": "Marcos Augusto Bertilotti",
-  "license": "MIT",
-  "dependencies": {
-  },
-  "devDependencies": {
-  }
+  "license": "MIT"
 }

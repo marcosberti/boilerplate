@@ -43,7 +43,7 @@ if (result.status === 0) {
 }
 
 command =
-  'npm i react react-dom react-router-dom react-error-boundary @emotion/core @emotion/styled emotion-normalize prop-types @babel/runtime'
+  'npm i react react-dom react-router-dom react-error-boundary @emotion/core @emotion/styled emotion-normalize prop-types'
 
 console.log(
   color('subtitle', `      Running the following command:   ${command}`)
@@ -58,7 +58,7 @@ if (result.status === 0) {
 }
 
 command =
-  'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react @babel/plugin-transform-async-to-generator @babel/plugin-transform-runtime @emotion/babel-plugin babel-plugin-transform-inline-environment-variables'
+  'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react @emotion/babel-plugin'
 
 console.log(
   color('subtitle', `      Running the following command:   ${command}`)
