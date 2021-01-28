@@ -1,0 +1,9 @@
+{
+  "presets": ["env"],
+  "plugins": [
+    "@babel/plugin-transform-async-to-generator",
+    "@babel/plugin-transform-runtime",
+    "@emotion/babel-plugin",
+    "transform-inline-environment-variables"
+  ]
+}

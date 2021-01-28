@@ -1,0 +1,7 @@
+node_modules/
+private/
+.cache/
+dist/
+coverage/
+.vscode/
+.env
