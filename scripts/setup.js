@@ -16,7 +16,7 @@ function color(modifier, string) {
   return styles[modifier].open + string + styles[modifier].close
 }
 
-console.log(color('info', '▶️  Starting project setup...'))
+console.log(color('info', '▶️  Installing dependencies...'))
 
 var error = spawnSync('npx --version', {shell: true}).stderr.toString().trim()
 if (error) {
@@ -29,7 +29,9 @@ if (error) {
   throw error
 }
 
-var command = 'npx install-peerdeps@v2.0.2 --dev eslint-config-wesbos'
+var command =
+  'npm i react react-dom react-router-dom react-error-boundary @emotion/core @emotion/styled emotion-normalize prop-types'
+
 console.log(
   color('subtitle', `      Running the following command:   ${command}`)
 )
@@ -37,25 +39,12 @@ console.log(
 var result = spawnSync(command, {stdio: 'inherit', shell: true})
 
 if (result.status === 0) {
-  console.log(color('success', '✅  Web Bos ESLint config complete...'))
-} else {
-  process.exit(result.status)
-}
-
-command =
-  'npm i react react-dom react-router-dom react-error-boundary @emotion/core @emotion/styled emotion-normalize prop-types'
-
-console.log(
-  color('subtitle', `      Running the following command:   ${command}`)
-)
-
-result = spawnSync(command, {stdio: 'inherit', shell: true})
-
-if (result.status === 0) {
   console.log(color('success', '✅  Dependencies installation complete...'))
 } else {
   process.exit(result.status)
 }
+
+console.log(color('info', '▶️  Installing dev dependencies...'))
 
 command =
   'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react @emotion/babel-plugin'
@@ -68,6 +57,21 @@ result = spawnSync(command, {stdio: 'inherit', shell: true})
 
 if (result.status === 0) {
   console.log(color('success', '✅  Dev Dependencies installation complete...'))
+} else {
+  process.exit(result.status)
+}
+
+console.log(color('info', '▶️  Installing Wes Bos ESLint config...'))
+
+command = 'npx install-peerdeps@v2.0.2 --dev eslint-config-wesbos'
+console.log(
+  color('subtitle', `      Running the following command:   ${command}`)
+)
+
+result = spawnSync(command, {stdio: 'inherit', shell: true})
+
+if (result.status === 0) {
+  console.log(color('success', '✅  Web Bos ESLint config complete...'))
 } else {
   process.exit(result.status)
 }
