@@ -30,7 +30,7 @@ if (error) {
 }
 
 var command =
-  'npm i react react-dom react-router-dom react-error-boundary @emotion/core @emotion/styled emotion-normalize prop-types'
+  'npm i react react-dom react-router-dom react-error-boundary @emotion/react emotion-normalize prop-types'
 
 console.log(
   color('subtitle', `      Running the following command:   ${command}`)
@@ -47,7 +47,7 @@ if (result.status === 0) {
 console.log(color('info', '▶️  Installing dev dependencies...'))
 
 command =
-  'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react @emotion/babel-plugin'
+  'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react babel-plugin-transform-inline-environment-variables @emotion/babel-preset-css-prop'
 
 console.log(
   color('subtitle', `      Running the following command:   ${command}`)
@@ -72,21 +72,6 @@ result = spawnSync(command, {stdio: 'inherit', shell: true})
 
 if (result.status === 0) {
   console.log(color('success', '✅  Web Bos ESLint config complete...'))
-} else {
-  process.exit(result.status)
-}
-
-console.log(color('info', '▶️  Removing remote...'))
-
-command = 'git remote remove origin'
-console.log(
-  color('subtitle', `      Running the following command:   ${command}`)
-)
-
-result = spawnSync(command, {stdio: 'inherit', shell: true})
-
-if (result.status === 0) {
-  console.log(color('success', '✅  Removing remote complete...'))
 } else {
   process.exit(result.status)
 }

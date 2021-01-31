@@ -11,7 +11,8 @@
       {
         "runtime": "automatic"
       }
-    ]
+    ],
+    "@emotion/babel-preset-css-prop"
   ],
-  "plugins": ["@emotion/babel-plugin"]
+  "plugins": ["transform-inline-environment-variables"]
 }
