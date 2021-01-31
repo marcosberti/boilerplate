@@ -76,6 +76,21 @@ if (result.status === 0) {
   process.exit(result.status)
 }
 
+console.log(color('info', '▶️  Removing remote...'))
+
+command = 'git remote remove origin'
+console.log(
+  color('subtitle', `      Running the following command:   ${command}`)
+)
+
+result = spawnSync(command, {stdio: 'inherit', shell: true})
+
+if (result.status === 0) {
+  console.log(color('success', '✅  Removing remote complete...'))
+} else {
+  process.exit(result.status)
+}
+
 /*
 eslint
   no-var: "off",
