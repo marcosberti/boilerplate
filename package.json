@@ -4,12 +4,16 @@
   "description": "",
   "main": "public/index.js",
   "scripts": {
-    "setup": "node setup",
+    "setup:before": "npm i -D shelljs chalk",
+    "setup": "npm run setup:before && node ./scripts/setup.js && npm run setup:after",
+    "setup:after": "npm un -D shelljs chalk",
     "start": "parcel public/index.html --open",
     "build": "parcel build public/index.html --no-source-maps",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Marcos Augusto Bertilotti",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
 }

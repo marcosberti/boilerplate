@@ -1,83 +1,320 @@
-// inpired by Kent C. Dodds setup scripts
+#!/usr/bin/env node
+// inpired by React Boilerplate https://github.com/react-boilerplate
+const shell = require('shelljs')
+const {exec} = require('child_process')
+const path = require('path')
+const fs = require('fs')
+const readline = require('readline')
+const chalk = require('chalk')
 
-var {spawnSync} = require('child_process')
+const animateProgress = require('./helpers/progress')
+const addCheckMark = require('./helpers/checkmark')
+const addXMark = require('./helpers/xmark')
+const dependencies = require('./helpers/dependencies')
+const devDependencies = require('./helpers/devDependencies')
 
-var styles = {
-  // got these from playing around with what I found from:
-  // https://github.com/istanbuljs/istanbuljs/blob/0f328fd0896417ccb2085f4b7888dd8e167ba3fa/packages/istanbul-lib-report/lib/file-writer.js#L84-L96
-  // they're the best I could find that works well for light or dark terminals
-  success: {open: '\u001b[32;1m', close: '\u001b[0m'},
-  danger: {open: '\u001b[31;1m', close: '\u001b[0m'},
-  info: {open: '\u001b[36;1m', close: '\u001b[0m'},
-  subtitle: {open: '\u001b[2;1m', close: '\u001b[0m'},
+process.stdin.resume()
+process.stdin.setEncoding('utf8')
+
+process.stdout.write('\n')
+let interval = -1
+
+/**
+ * Report the the given error and exits the setup
+ * @param {string} error
+ */
+function reportError(error) {
+  clearInterval(interval)
+
+  if (error) {
+    process.stdout.write('\n\n')
+    addXMark(() => process.stderr.write(chalk.red(` ${error}\n`)))
+    process.exit(1)
+  }
 }
 
-function color(modifier, string) {
-  return styles[modifier].open + string + styles[modifier].close
+/**
+ * Deletes a file in the current directory
+ * @param {string} file
+ * @returns {Promise<any>}
+ */
+function deleteFileInCurrentDir(file) {
+  return new Promise((resolve, reject) => {
+    fs.unlink(path.join(__dirname, file), err => reject(new Error(err)))
+    resolve()
+  })
 }
 
-console.log(color('info', '▶️  Installing dependencies...'))
+/**
+ * Checks if we are under Git version control
+ * @returns {Promise<boolean>}
+ */
+function hasGitRepository() {
+  return new Promise((resolve, reject) => {
+    exec('git status', (err, stdout) => {
+      if (err) {
+        reject(new Error(err))
+      }
 
-var error = spawnSync('npx --version', {shell: true}).stderr.toString().trim()
-if (error) {
-  console.error(
-    color(
-      'danger',
-      '🚨  npx is not available on this computer. Please install npm@5.2.0 or greater'
-    )
+      const regex = new RegExp(/fatal:\s+Not\s+a\s+git\s+repository/, 'i')
+
+      /* eslint-disable-next-line no-unused-expressions */
+      regex.test(stdout) ? resolve(false) : resolve(true)
+    })
+  })
+}
+
+/**
+ * Checks if this is a clone from our repo
+ * @returns {Promise<any>}
+ */
+function checkIfRepositoryIsAClone() {
+  return new Promise((resolve, reject) => {
+    exec('git remote -v', (err, stdout) => {
+      if (err) {
+        reject(new Error(err))
+      }
+
+      const isClonedRepo = stdout
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line.startsWith('origin'))
+        .filter(line => /marcosberti\/boilerplate\.git/.test(line)).length
+
+      resolve(!!isClonedRepo)
+    })
+  })
+}
+
+/**
+ * Remove the current Git repository
+ * @returns {Promise<any>}
+ */
+function removeGitRepository() {
+  return new Promise((resolve, reject) => {
+    try {
+      shell.rm('-rf', '.git/')
+      resolve()
+    } catch (err) {
+      reject(err)
+    }
+  })
+}
+
+/**
+ * Ask user if he wants to start with a new repository
+ * @returns {Promise<boolean>}
+ */
+function askUserIfWeShouldRemoveRepo() {
+  return new Promise(resolve => {
+    process.stdout.write('\nDo you want to start with a new repository? [Y/n] ')
+    process.stdin.resume()
+    process.stdin.on('data', pData => {
+      const answer = pData.toString().trim().toLowerCase() || 'y'
+
+      /* eslint-disable-next-line no-unused-expressions */
+      answer === 'y' ? resolve(true) : resolve(false)
+    })
+  })
+}
+
+/**
+ * Checks if we are under Git version control.
+ * If we are and this a clone of our repository the user is given a choice to
+ * either keep it or start with a new repository.
+ * @returns {Promise<boolean>}
+ */
+async function cleanCurrentRepository() {
+  const hasGitRepo = await hasGitRepository().catch(reason =>
+    reportError(reason)
   )
-  throw error
+
+  // We are not under Git version control. So, do nothing
+  if (hasGitRepo === false) {
+    return false
+  }
+
+  const isClone = await checkIfRepositoryIsAClone().catch(reason =>
+    reportError(reason)
+  )
+
+  // Not our clone so do nothing
+  if (isClone === false) {
+    return false
+  }
+
+  const answer = await askUserIfWeShouldRemoveRepo()
+
+  if (answer === true) {
+    process.stdout.write('Removing current repository')
+    await removeGitRepository().catch(reason => reportError(reason))
+    addCheckMark()
+  }
+
+  return answer
 }
 
-var command =
-  'npm i react react-dom react-router-dom react-error-boundary @emotion/react emotion-normalize prop-types'
+/**
+ * install Wes Bos setup
+ * @param {function} resolve
+ * @param {function} reject
+ * @returns {undefined}
+ */
+function installWesBosSetup(resolve, reject) {
+  setTimeout(() => {
+    readline.cursorTo(process.stdout, 0)
+    interval = animateProgress('Installing dev dependencies')
+  }, 500)
 
-console.log(
-  color('subtitle', `      Running the following command:   ${command}`)
-)
-
-var result = spawnSync(command, {stdio: 'inherit', shell: true})
-
-if (result.status === 0) {
-  console.log(color('success', '✅  Dependencies installation complete...'))
-} else {
-  process.exit(result.status)
+  exec('npx install-peerdeps@v2.0.2 --dev eslint-config-wesbos', err => {
+    if (err) {
+      reject(new Error(err))
+    }
+    clearInterval(interval)
+    addCheckMark()
+    resolve('Packages installed')
+  })
 }
 
-console.log(color('info', '▶️  Installing dev dependencies...'))
+/**
+ * install dev dependencies
+ * @param {function} resolve
+ * @param {function} reject
+ * @returns {undefined}
+ */
+function installDevDependencies(resolve, reject) {
+  setTimeout(() => {
+    readline.cursorTo(process.stdout, 0)
+    interval = animateProgress('Installing dev dependencies')
+  }, 500)
 
-command =
-  'npm i -D parcel-bundler @babel/core @babel/cli @babel/preset-env @babel/preset-react babel-plugin-transform-inline-environment-variables @emotion/babel-preset-css-prop'
-
-console.log(
-  color('subtitle', `      Running the following command:   ${command}`)
-)
-
-result = spawnSync(command, {stdio: 'inherit', shell: true})
-
-if (result.status === 0) {
-  console.log(color('success', '✅  Dev Dependencies installation complete...'))
-} else {
-  process.exit(result.status)
+  exec(`npm i -D ${devDependencies.join().replace(/,/g, ' ')}`, err => {
+    if (err) {
+      reject(new Error(err))
+    }
+    clearInterval(interval)
+    addCheckMark()
+    installWesBosSetup(resolve, reject)
+  })
 }
 
-console.log(color('info', '▶️  Installing Wes Bos ESLint config...'))
+/**
+ * install dependencies
+ * @param {function} resolve
+ * @param {function} reject
+ * @returns {undefined}
+ */
+function installDependencies(resolve, reject) {
+  setTimeout(() => {
+    readline.cursorTo(process.stdout, 0)
+    interval = animateProgress('Installing dependencies')
+  }, 500)
 
-command = 'npx install-peerdeps@v2.0.2 --dev eslint-config-wesbos'
-console.log(
-  color('subtitle', `      Running the following command:   ${command}`)
-)
-
-result = spawnSync(command, {stdio: 'inherit', shell: true})
-
-if (result.status === 0) {
-  console.log(color('success', '✅  Web Bos ESLint config complete...'))
-} else {
-  process.exit(result.status)
+  exec(`npm i ${dependencies.join().replace(/,/g, ' ')}`, err => {
+    if (err) {
+      reject(new Error(err))
+    }
+    clearInterval(interval)
+    addCheckMark()
+    installDevDependencies(resolve, reject)
+  })
 }
 
-/*
-eslint
-  no-var: "off",
-  "vars-on-top": "off",
-*/
+/**
+ * Install all packages
+ * @returns {Promise<any>}
+ */
+function installPackages() {
+  return new Promise((resolve, reject) => {
+    process.stdout.write(
+      '\nInstalling dependencies... (This might take a while)'
+    )
+
+    installDependencies(resolve, reject)
+  })
+}
+
+/**
+ * Initialize a new Git repository
+ * @returns {Promise<any>}
+ */
+function initGitRepository() {
+  return new Promise((resolve, reject) => {
+    exec('git init', (err, stdout) => {
+      if (err) {
+        reject(new Error(err))
+      } else {
+        resolve(stdout)
+      }
+    })
+  })
+}
+
+/**
+ * Add all files to the new repository
+ * @returns {Promise<any>}
+ */
+function addToGitRepository() {
+  return new Promise((resolve, reject) => {
+    exec('git add .', (err, stdout) => {
+      if (err) {
+        reject(new Error(err))
+      } else {
+        resolve(stdout)
+      }
+    })
+  })
+}
+
+/**
+ * Initial Git commit
+ * @returns {Promise<any>}
+ */
+function commitToGitRepository() {
+  return new Promise((resolve, reject) => {
+    exec('git commit -m "Initial commit"', (err, stdout) => {
+      if (err) {
+        reject(new Error(err))
+      } else {
+        resolve(stdout)
+      }
+    })
+  })
+}
+
+/**
+ * End the setup process
+ */
+function endProcess() {
+  clearInterval(interval)
+  process.stdout.write(chalk.blue('\n\nDone!\n'))
+  process.exit(0)
+}
+
+;(async () => {
+  const repoRemoved = await cleanCurrentRepository()
+
+  await installPackages().catch(reason => reportError(reason))
+  await deleteFileInCurrentDir('setup.js').catch(reason => reportError(reason))
+
+  console.log('repo', repoRemoved)
+
+  if (repoRemoved) {
+    process.stdout.write('\n')
+    interval = animateProgress('Initialising new repository')
+    process.stdout.write('Initialising new repository')
+
+    try {
+      await initGitRepository()
+      await addToGitRepository()
+      await commitToGitRepository()
+    } catch (err) {
+      reportError(err)
+    }
+
+    addCheckMark()
+    clearInterval(interval)
+  }
+
+  endProcess()
+})()
